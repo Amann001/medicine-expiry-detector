@@ -1,32 +1,40 @@
-# Medicine Expiry Detector
+# AI-Powered Medicine Expiry Detection
 
-AI-powered medicine expiry detection system using YOLOv8 and OCR.
+## Overview
 
-## Current Progress
+This project aims to automatically detect and extract medicine expiry information from medicine package images using Computer Vision and OCR.
 
-### Completed
-- Custom medicine dataset collection
-- Image annotation using Roboflow
-- YOLOv8 training pipeline setup
-- Baseline model training on Kaggle
-- Dataset evaluation
+## Features
 
-### Findings
-- Medicine package detection works reasonably well
-- Small text regions (drug name and expiry region) are difficult to detect reliably
-- Project architecture updated to YOLO + OCR approach
-
-### Next Steps
-- Integrate EasyOCR
-- Extract expiry dates
-- Build Streamlit web application
+* Custom medicine image dataset collection
+* Manual annotation using Roboflow
+* YOLOv8-based expiry region detection
+* OpenCV image preprocessing
+* OCR-based text extraction
+* Expiry date identification pipeline
 
 ## Tech Stack
 
-- Python
-- YOLOv8
-- EasyOCR
-- OpenCV
-- Streamlit
-- Roboflow
-- Kaggle
+* Python
+* YOLOv8
+* OpenCV
+* EasyOCR
+* Roboflow
+* Kaggle
+
+## Current Pipeline
+
+Image → YOLO Detection → Expiry Region Crop → OCR → Expiry Date Extraction
+
+## Dataset
+
+The model was trained on a custom dataset consisting of manually collected and annotated medicine package images.
+
+## Future Improvements
+
+* PaddleOCR integration
+* Gemini Vision integration
+* FastAPI backend
+* React frontend
+* Real-time mobile camera support
+* Inventory management integration

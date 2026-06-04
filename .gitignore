@@ -1,15 +1,11 @@
 venv/
 __pycache__/
-.ipynb_checkpoints/
-
-*.pt
-*.pth
-
-runs/
-datasets/
-
-.env
-.DS_Store
 
 *.pyc
-*.pyo
+
+ocr_output.txt
+processed.jpeg
+rotated.jpeg
+expiry_text_region.jpeg
+
+runs/
