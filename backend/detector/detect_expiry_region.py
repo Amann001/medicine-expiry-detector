@@ -6,12 +6,12 @@ from pathlib import Path
 model = YOLO("backend/models/best.pt")
 
 # Test image
-image_path = "backend/ocr/test_image.jpeg"
+image_path = "backend/ocr/uploaded_image.jpeg"
 
 # Run inference
 results = model.predict(
     source=image_path,
-    conf=0.25,
+    conf=0.05,
     save=False
 )
 
