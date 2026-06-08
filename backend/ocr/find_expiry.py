@@ -8,38 +8,27 @@ MONTH_MAP = {
 }
 
 def extract_expiry_date(ocr_results):
-    """
-    Works with ANY format:
-    - [(bbox, text, conf), ...] — raw EasyOCR output
-    - [(text, conf), ...]       — pre-processed tuples
-    - [text, ...]               — plain strings
-    """
-    # Normalise to list of strings
+    # Normalise everything to clean uppercase strings
     texts = []
     for item in ocr_results:
         if isinstance(item, str):
             texts.append(item.strip().upper())
         elif isinstance(item, (list, tuple)):
             if len(item) == 3:
-                # Raw EasyOCR: (bbox, text, conf)
                 texts.append(str(item[1]).strip().upper())
             elif len(item) == 2:
-                # Pre-processed: (text, conf)
                 texts.append(str(item[0]).strip().upper())
 
     full_text = ' '.join(texts)
 
-    # Pattern matching on full joined text
+    # Strategy 1: EXP + month + year pattern
     patterns = [
         r'EXP[:\s\.]*([A-Z]{3})[:\s\-/]*(\d{4})',
         r'EXP[:\s\.]*([A-Z]{3})[:\s\-/]*(\d{2})',
         r'EXPIRY[:\s]*([A-Z]{3})[:\s]*(\d{4})',
         r'EXP[:\s\.]*(\d{2})[/\-](\d{4})',
         r'EXP[:\s\.]*(\d{2})[/\-](\d{2})',
-        r'USE\s+BEFORE[:\s]*([A-Z]{3})[:\s]*(\d{4})',
-        r'BEST\s+BEFORE[:\s]*([A-Z]{3})[:\s]*(\d{4})',
     ]
-
     for pattern in patterns:
         match = re.search(pattern, full_text)
         if match:
@@ -47,25 +36,23 @@ def extract_expiry_date(ocr_results):
             if g1.isalpha() and g1 in MONTH_MAP:
                 month = MONTH_MAP[g1]
                 year = int(g2) if len(g2) == 4 else 2000 + int(g2)
-                expiry_str = f"{g1} {year}"
-                return _check_status(expiry_str, month, year)
+                return _check_status(f"{g1} {year}", month, year)
             if g1.isdigit():
                 month = int(g1)
                 year = int(g2) if len(g2) == 4 else 2000 + int(g2)
                 return _check_status(f"{month:02d}/{year}", month, year)
 
-    # Token-by-token search for EXP + month + year
+    # Strategy 2: Token search — EXP followed by month and year nearby
     exp_idx = None
     for i, t in enumerate(texts):
-        if t in ['EXP', 'EXPIRY', 'EXP.', 'EXP:']:
+        clean = re.sub(r'[^A-Z0-9]', '', t)
+        if clean in ['EXP', 'EXPIRY']:
             exp_idx = i
             break
 
     if exp_idx is not None:
         nearby = texts[exp_idx+1: exp_idx+5]
-        month = None
-        month_str = None
-        year = None
+        month, month_str, year = None, None, None
         for token in nearby:
             clean = re.sub(r'[^A-Z0-9]', '', token)
             if clean in MONTH_MAP and month is None:
@@ -79,6 +66,24 @@ def extract_expiry_date(ocr_results):
             return _check_status(f"{month_str} {year}", month, year)
         if year:
             return _check_status(str(year), 12, year)
+
+    # Strategy 3: Find any 4-digit year between 2020-2035
+    # Used when EXP text is garbled but year is clear
+    year_matches = re.findall(r'\b(20[2-3]\d)\b', full_text)
+    if year_matches:
+        year = int(year_matches[0])
+        # Look for a month nearby in the text list
+        for i, t in enumerate(texts):
+            clean = re.sub(r'[^A-Z0-9]', '', t)
+            if re.match(r'^20[2-3]\d$', clean):
+                # Check surrounding tokens for month
+                nearby = texts[max(0,i-3):i] + texts[i+1:i+4]
+                for tok in nearby:
+                    c = re.sub(r'[^A-Z]', '', tok)
+                    if c in MONTH_MAP:
+                        return _check_status(f"{c} {year}", MONTH_MAP[c], year)
+                # No month found but year is valid — return with December as default
+                return _check_status(str(year), 12, year)
 
     return None, "Expiry date not found"
 
